@@ -1,0 +1,17 @@
+AddDefaultCharset UTF-8
+
+Header set X-Content-Type-Options "nosniff"
+
+<FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|woff|woff2|ttf)$">
+    Header set Cache-Control "max-age=31536000, immutable"
+</FilesMatch>
+
+<FilesMatch "\.js$">
+    AddCharset utf-8 .js
+</FilesMatch>
+
+<FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>

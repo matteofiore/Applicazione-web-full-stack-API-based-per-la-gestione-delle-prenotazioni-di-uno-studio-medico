@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css" />
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <title>Login</title>
+</head>
+<body>
+    <div id="login">
+        <h3 class="text-center text-white pt-5">Login form</h3> 
+        <div class="container">
+            <div id="login-row" class="row justify-content-center align-items-center">
+                <div id="login-column" class="col-md-6">
+                    <div id="login-box" class="col-md-12">
+                        <form id="login-form" class="form">
+                            <h3 class="text-center text-info">Login</h3>
+                            <div class="form-group">
+                                <label class="text-info">Email:</label><br />
+                                <input
+                                  type="email"
+                                  pattern="[^@]+@[^@]+\.[a-zA-Z]{2,}"
+                                  name="email"
+                                  class="form-control"
+                                  required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label class="text-info">Password:</label><br />
+                                <input
+                                  type="password"
+                                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                                  name="password"
+                                  class="form-control"
+                                  required
+                                />
+                            </div>
+                            <div class="form-group">
+                                <input type="submit" name="submit" class="btn btn-info btn-md" value="Accedi"/>
+                            </div>
+                            <div id="register-link" class="text-right">
+                                <a href="/Tesi/registrazione.html" class="text-info">Non sei registrato?</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestione Medici</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="amministratore.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="card-custom">
+    <div class="header-title">
+      Gestione Medici
+    </div>
+    <div class="subtitle" id="amministratore">
+      Amministratore
+    </div>
+    <div class="btn-bar">
+      <button type="button" class="btn btn-info" onclick="registra()">Registra</button>
+      <button type="button" class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+    <div class="table-responsive">
+      <table id="gestione-medici" class="table table-bordered table-custom">
+        <thead>
+          <tr>
+            <th class="bg-info text-white">Cognome</th>
+            <th class="bg-info text-white">Nome</th>
+            <th class="bg-info text-white">Specializzazione</th>
+          </tr>
+        </thead>
+        <tbody></tbody> 
+      </table>
+    </div>
+    <div class="copyright">
+      &copy; 2025 - Sistema Prenotazione Sanitaria
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.1/dist/js/bootstrap.min.js"></script>
+  <script src="/TESI/amministratore/gestione_medici.js"></script> 
+</body>
+</html>
