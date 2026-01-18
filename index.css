@@ -1,0 +1,57 @@
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg,#d5f2fb 0%, #cbe6f4 100%);
+}
+.index-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 16px rgba(0,0,0,.07);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 410px;
+  width: 100%;
+  margin-top: 2rem;
+}
+.logo {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #17a2b8;
+  margin-bottom: 0.6rem;
+  text-align: center;
+  letter-spacing: 1px;
+}
+.index-btns .btn {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 1rem 0;
+  font-size: 1.1rem;
+}
+.small-logo {
+  display: block;
+  margin: 0 auto 6px auto;
+  height: 32px;
+  width: 32px;
+}
+.medium-logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #17a2b8;
+  margin-bottom: 0.6rem;
+  text-align: center;
+  letter-spacing: 1px;
+}
+.copyright {
+  margin-top: 2rem;
+  color: #888;
+  font-size: .9rem;
+  text-align: center;
+}
+.admin-note {
+  margin-top: 0.4rem;
+  color: #777;
+  font-size: .95rem;
+  text-align: center;
+}
