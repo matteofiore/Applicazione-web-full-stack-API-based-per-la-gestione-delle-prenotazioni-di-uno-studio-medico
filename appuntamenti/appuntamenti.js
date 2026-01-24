@@ -1,19 +1,23 @@
+//COSTRUZIONE URL DINAMICO
 const API_BASE = `${location.protocol}//${location.hostname}:5000`;
+
 let flatpickrRegistra = null;
 let flatpickrModifica = null;
 let pendingModificaOra = null;
 
-async function getSessionData() {
+//FUNZIONE VERIFICA SESSIONE
+async function controlloSessione() {
   try {
-    const res = await fetch(`${API_BASE}/session`, {
-      credentials: "include"
-    });
-
-    if (!res.ok) return null;
-
+    //CHIAMATA API PER CHCECK COOKIE DI SESSIONE
+    const res = await fetch(`${API_BASE}/session`,
+      {
+        credentials: "include"
+      });
+    if (!res.ok){
+      return;
+    }
     const data = await res.json();
     return { ruolo: data.ruolo, id: data.id, nome: data.nome, cognome: data.cognome};
-
   } catch (err) {
     console.error("Errore sessione:", err);
     alert("Errore nel recupero della sessione");
@@ -21,43 +25,46 @@ async function getSessionData() {
   }
 }
 
+//FUNZIONE PER CALCOLARE LA FINE DELL'APPUNTAMENTO
 function calcolaFine30Minuti(data, ora) {
   const d = new Date(`${data}T${ora}`);
   d.setMinutes(d.getMinutes() + 30);
   return d.toISOString();
 }
 
+//FUNZIONE PER TRASFORMARE LA DATA NEL FORMATO YYYY-MM-DD
 function normalizzaDataPerInput(dateStr) {
-  // accetta DD/MM/YYYY o MM/DD/YYYY
   const parts = dateStr.includes("/")
     ? dateStr.split("/")
     : dateStr.split("-");
-
-  if (parts[0].length === 4) return dateStr; // già YYYY-MM-DD
-
+  if (parts[0].length === 4) return dateStr; // DATA GIA NEL FORMATO YYYY-MM-DD
   const [dd, mm, yyyy] = parts;
   return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
 }
 
-
+//FUNZIONE PER INIZIALIZZARE UN SELETTORE DI DATA/ORA
 function initFlatpickr(selector, defaultOra = "08:00") {
   return flatpickr(selector, {
     enableTime: true,
     noCalendar: true,
     dateFormat: "H:i",
     time_24hr: true,
-    minuteIncrement: 15,
-    minTime: "08:00",
-    maxTime: "19:00",
+    minuteIncrement: 30, //INCREMENTO DI 30 MINUTI IN 30 MINUTI
+    minTime: "08:00", //ORARIO MINIMO ACCETTATO
+    maxTime: "19:00", //ORARIO MASSIMO ACCETTATO
     defaultDate: defaultOra
   });
 }
+
+//FUNZIONE PER EFFETTUARE LOGOUT
 async function logout() {
   try {
-    const res = await fetch(`${API_BASE}/session`, {
-      method: "DELETE",
-      credentials: "include"
-    });
+    //CHIAMATA API PER EFFETTUARE LOGOUT
+    const res = await fetch(`${API_BASE}/session`,
+      {
+        method: "DELETE",
+        credentials: "include"
+      });
 
     if (!res.ok) {
       alert("Errore durante il logout");
@@ -71,28 +78,31 @@ async function logout() {
   }
 }
 
-
-/************************************************************
- * API APPUNTAMENTI (CRUD)
- ************************************************************/
+//FUNZIONE PER ELIMINARE UN APPUNTAMENTO
 async function eliminaAppuntamento(id) {
-  const res = await fetch(
-    `${API_BASE}/gestione_appuntamento/elimina?id=${id}`,
-    { method: "DELETE", credentials: "include" }
+  //CHIAMATA API PER ELIMINARE APPUNTAMENTO IN BASE ALL'ID
+  const res = await fetch(`${API_BASE}/gestione_appuntamento/elimina?id=${id}`,
+    {
+      method: "DELETE",
+      credentials: "include"
+    }
   );
-
   if (!res.ok) {
     alert("Errore durante l'eliminazione");
     return;
   }
-
   window.location.reload();
 }
 
+//FUNZIONE PER CONFERMARE APPUNTAMENTO IN BASE ALL'ID
 async function confermaAppuntamento(id) {
+  //CHIAMATA API PER CONFERMARE L'APPUNTAMENTO
   const res = await fetch(
     `${API_BASE}/gestione_appuntamento/accetta?id=${id}`,
-    { method: "POST", credentials: "include" }
+    {
+      method: "POST",
+      credentials: "include"
+    }
   );
 
   if (!res.ok) {
@@ -107,10 +117,12 @@ async function confermaAppuntamento(id) {
   window.location.reload();
 }
 
+//FUNZIONE REGISTRAZIONE APPUNTAMENTO
 async function registraAppuntamento() {
-  const session = await getSessionData();
+  const session = await controlloSessione(); //CHECK PRESENZA COOKIE
   if (!session) return;
-
+ 
+  //CREAZIONE PAYLOAD CON I DATI PRESI DAL FORM
   const payload = {
     data: document.getElementById("data").value,
     ora: document.getElementById("registraOra").value,
@@ -118,6 +130,7 @@ async function registraAppuntamento() {
     ruolo: session.ruolo
   };
 
+  //DEFINIZIONE DEL RUOLO DELL'UTENTE DA AGGIUNGERE AL PAYLOAD
   if (session.ruolo === "Medico") {
     payload.medico_id = session.id;
     payload.paziente_id = document.getElementById("paziente").value;
@@ -125,7 +138,7 @@ async function registraAppuntamento() {
     payload.paziente_id = session.id;
     payload.medico_id = document.getElementById("medico").value;
   }
-
+  //INVIO TRAMITE API I DATI DEL FORM IN JSON
   try {
     const res = await fetch(
       `${API_BASE}/gestione_appuntamento/crea`,
@@ -136,7 +149,7 @@ async function registraAppuntamento() {
         body: JSON.stringify(payload)
       }
     );
-
+    //GESTIONE RISPOSTA API
     if (!res.ok) {
       const err = await res.text();
       console.error("Errore backend:", err);
@@ -151,18 +164,16 @@ async function registraAppuntamento() {
   }
 }
 
+//FUNZIONE PER APRIRE UN MODAL PER MODIFICARE L'APPUNTAMENTO
 function modificaAppuntamento(id, data, ora, descrizione) {
   document.getElementById("modificaAppId").value = id;
 
-  // DATA → formato corretto
+  //TRASFORMO LA DATA NELLA VISUALIZZAZIONE CORRETTA
   document.getElementById("modificaData").value =
     normalizzaDataPerInput(data);
 
-  // DESCRIZIONE
-  document.getElementById("modificaDescrizione").value =
-    descrizione || "";
+  document.getElementById("modificaDescrizione").value = descrizione || "";
 
-  // ORA
   if (flatpickrModifica) {
     flatpickrModifica.destroy();
   }
@@ -171,14 +182,12 @@ function modificaAppuntamento(id, data, ora, descrizione) {
   $("#modificaAppuntamentoModal").modal("show");
 }
 
-
-/************************************************************
- * CALENDARIO
- ************************************************************/
+//FUNZIONE PER COSTRUIRE IL CALENDARIO PRESENTE NELLA PAGINA HTML
 async function inizializzaCalendario(session) {
   const calendarEl = document.getElementById("calendario");
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
+  //CREAZIONE DEL NUOVO CALENDARIO
+  const calendario = new FullCalendar.Calendar(calendarEl, {
     initialView: "timeGridWeek",
     locale: "it",
     slotMinTime: "08:00:00",
@@ -186,6 +195,7 @@ async function inizializzaCalendario(session) {
     slotDuration: "00:30:00",
     allDaySlot: false,
 
+    //AGGIUNTA NELL'HEADER IL TITOLO, LA VISUALIZZAZIONE PER MESE, SETTIMANE GIORNO E DUE FRECCE PER SCORRERE
     headerToolbar: {
       left: "prev,next today",
       center: "title",
@@ -199,15 +209,14 @@ async function inizializzaCalendario(session) {
           : "confermato,in attesa di conferma dal medico";
 
       try {
-        const res = await fetch(
-          `${API_BASE}/gestione_appuntamento/lista` +
-          `?start=${info.startStr.split("T")[0]}` +
-          `&end=${info.endStr.split("T")[0]}` +
-          `&stato=${encodeURIComponent(stato)}`,
-          { credentials: "include" }
-        );
+        const res = await fetch(`${API_BASE}/gestione_appuntamento/lista`+`?start=${info.startStr.split("T")[0]}`+`&end=${info.endStr.split("T")[0]}`+`&stato=${encodeURIComponent(stato)}`,{
+          credentials: "include"
+        }
+      );
 
-        if (!res.ok) throw new Error("Errore eventi");
+        if (!res.ok){
+          return;
+        }
 
         const data = await res.json();
         success(
@@ -226,12 +235,14 @@ async function inizializzaCalendario(session) {
       }
     },
 
+    //FUNZIONE CHE AL CLICK DELL'EVENTO APRE UN MODAL PER VEDERE NEL DETTAGLIO L'EVENTO
     eventClick(info) {
       const app = info.event.extendedProps;
-
       document.getElementById("modalBodyEvento").innerHTML = `
         <b>Data:</b> ${app.data}<br>
         <b>Ora:</b> ${app.ora}<br>
+        <b>Medico:</b> ${app.medico || "N/A"}<br>
+        <b>Paziente:</b> ${app.paziente || "N/A"}<br>
         <b>Descrizione:</b> ${app.descrizione || ""}<br>
         <b>Stato:</b> ${app.stato}<br>
 
@@ -240,26 +251,24 @@ async function inizializzaCalendario(session) {
               width="25" height="25"
               onclick="eliminaAppuntamento('${app.id}')"/>
 
-          <img src="../immagini/pencil-svgrepo-com (1).svg"
+          <img src="../immagini/pencil-svgrepo-com.svg"
               width="25" height="25"
               onclick="modificaAppuntamento('${app.id}', '${app.data}', '${app.ora}', '${(app.descrizione)}')"/>
 
           <img src="../immagini/accept-check-good-mark-ok-tick-svgrepo-com.svg"
               width="25" height="25"
               onclick="confermaAppuntamento('${app.id}')"/>
-        </div>
+        </div>  
       `;
 
       $("#eventoModal").modal("show");
     }
   });
 
-  calendar.render();
+  calendario.render();
 }
 
-/************************************************************
- * TABELLA
- ************************************************************/
+//FUNZIONE PER GENERARE LA TABELLA NELLA PAGINA HTML
 async function generaTabella(session) {
   const stato =
     session.ruolo === "Medico"
@@ -267,17 +276,21 @@ async function generaTabella(session) {
       : "in attesa di conferma dal paziente";
 
   try {
-    const res = await fetch(
-      `${API_BASE}/gestione_appuntamento/lista?stato=${encodeURIComponent(stato)}`,
-      { credentials: "include" }
+    const res = await fetch(`${API_BASE}/gestione_appuntamento/lista?stato=${encodeURIComponent(stato)}`,
+    {
+      credentials: "include"
+    }
     );
 
-    if (!res.ok) throw new Error("Errore tabella");
+    if (!res.ok){
+      return;
+    }
 
     const data = await res.json();
     const tbody = document.querySelector("#tabella-appuntamenti tbody");
     tbody.innerHTML = "";
 
+    //INSERIMENTO RIGHE TABELLA
     data.forEach(app => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -287,7 +300,7 @@ async function generaTabella(session) {
         <td>${app.descrizione || ""}</td>
         <td>
           <img src="../immagini/negative-minus-svgrepo-com.svg" id="${app.id}" width="25" height="25" onclick="eliminaAppuntamento('${app.id}')"/>
-          <img src=../immagini/pencil-svgrepo-com (1).svg" width="25" height="25" onclick="modificaAppuntamento('${app.id}','${app.data}','${app.ora}','${(app.descrizione)}')"/>
+          <img src="../immagini/pencil-svgrepo-com.svg" width="25" height="25" onclick="modificaAppuntamento('${app.id}','${app.data}','${app.ora}','${(app.descrizione)}')"/>
           <img src="../immagini/accept-check-good-mark-ok-tick-svgrepo-com.svg" id="${app.id}" width="25" height="25" onclick="confermaAppuntamento('${app.id}')"/>
         </td>
       `;
@@ -299,12 +312,11 @@ async function generaTabella(session) {
   }
 }
 
-/************************************************************
- * SELECT MEDICO / PAZIENTE
- ************************************************************/
+//FUNZIONE CHE IN BASE AL RUOLO  ESTRAPOLA LA LISTA DI UTENTI O MEDICI
 async function initSelectRuolo(session) {
   if (session.ruolo === "Medico" && document.getElementById("paziente")) {
-    const res = await fetch(`${API_BASE}/utenti`, {
+    const res = await fetch(`${API_BASE}/utenti`,
+      {
       credentials: "include"
     });
     const data = await res.json();
@@ -320,9 +332,10 @@ async function initSelectRuolo(session) {
   }
 
   if (session.ruolo === "Paziente" && document.getElementById("medico")) {
-    const res = await fetch(`${API_BASE}/medico/lista_medici`, {
-      credentials: "include"
-    });
+    const res = await fetch(`${API_BASE}/medico/lista`,
+      {
+        credentials: "include"
+      });
     const data = await res.json();
 
     $("#medico").select2({
@@ -336,14 +349,19 @@ async function initSelectRuolo(session) {
   }
 }
 
-/************************************************************
- * EVENTI & INIT
- ************************************************************/
+//LISTENER CHE SI ATTIVA AL CARICAMENTO DELLA PAGINA
 document.addEventListener("DOMContentLoaded", async () => {
-  const session = await getSessionData();
+  const session = await controlloSessione();
   if (!session) {
-    window.location.href = "/Tesi/index.html";
+    window.location.href = "../index.html";
     return;
+  }
+  if (session.ruolo === 'Medico') {
+    const h = document.getElementById('medico');
+    if (h) h.textContent = "Dr. " + session.nome + " " + session.cognome;
+  } else {
+    const h = document.getElementById('utente');
+    if (h) h.textContent += session.nome + " " + session.cognome;
   }
 
   inizializzaCalendario(session);
@@ -354,11 +372,9 @@ $('#registraAppuntamentoModal').on('shown.bs.modal', async function () {
   if (flatpickrRegistra) flatpickrRegistra.destroy();
   flatpickrRegistra = initFlatpickr("#registraOra");
 
-  const session = await getSessionData();
+  const session = await controlloSessione();
   if (session) initSelectRuolo(session);
-});
 
-document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registraAppuntamentoForm");
   if (!form) return;
 
@@ -368,21 +384,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const session = await getSessionData();
-    if (!session) {
-        window.location.href = "/Tesi/index.html";
-        return;
-    }
-    if (session.ruolo === 'Medico') {
-        const h = document.getElementById('medico');
-    if (h) h.textContent = "Dr. " + session.nome + " " + session.cognome;
-    } else {
-        const h = document.getElementById('utente');
-        if (h) h.textContent += session.nome + " " + session.cognome;
-    }
-});
-
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("modificaAppuntamentoForm");
   if (!form) return;
@@ -390,7 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async e => {
     e.preventDefault();
 
-    const session = await getSessionData();
+    const session = await controlloSessione();
     if (!session) {
       alert("Sessione non valida");
       return;
@@ -431,9 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/************************************************************
- * ESPOSIZIONE GLOBALE
- ************************************************************/
+//FUNZIONI GLOBALI
 window.eliminaAppuntamento = eliminaAppuntamento;
 window.confermaAppuntamento = confermaAppuntamento;
 window.registraAppuntamento = registraAppuntamento;

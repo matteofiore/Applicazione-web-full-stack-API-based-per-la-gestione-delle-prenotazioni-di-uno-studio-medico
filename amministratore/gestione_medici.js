@@ -1,78 +1,110 @@
+//COSTRUZIONE URL DINAMICO
 const API_BASE = `${location.protocol}//${location.hostname}:5000`;
 
 // Funzione per leggere il cookie di sessione e estrarre nome
-async function getSessionData() {
+async function controlloSessione() {
   try {
-    const res = await fetch(`${API_BASE}/session`, {
-      credentials: "include"
-    });
+    //CHIAMATA API PER CHCECK COOKIE DI SESSIONE
+    const res = await fetch(`${API_BASE}/session`,
+      {
+        credentials: "include"
+      });
 
-    if (!res.ok) return null;
+    if (!res.ok){
+      return;
+     }
 
     const data = await res.json();
-    return { ruolo: data.ruolo, id: data.id, nome: data.nome, cognome: data.cognome};
+    return { ruolo: data.ruolo, id: data.id, nome: data.nome, cognome: data.cognome };
 
   } catch (err) {
     console.error("Errore sessione:", err);
-    alert("Errore nel recupero della sessione");
     return null;
   }
 }
 
-function registra(){
+//FUNZIONE PER REDIRECT
+function registra() {
   window.location.href = "../amministratore/registra_medico.html";
 }
 
+//FUNZIONE PER MOSTRARE MESSAGGI DI ERRORE O SUCCESSO NEL BOX HTML
+function mostraMessaggio(testo, tipo = 'danger') {
+  const box = document.getElementById('msg-box');
+  if (!box) return;
+
+  box.className = `alert alert-${tipo} mx-3 mt-3`;
+  box.textContent = testo;
+  box.classList.remove('d-none');
+}
+
+//FUNZIONE PER NASCONDERE MESSAGGIO
+function nascondiMessaggio() {
+  const box = document.getElementById('msg-box');
+  if (box) box.classList.add('d-none');
+}
+
+//FUNZIONE PER EFFETTUARE LOGOUT
 async function logout() {
   try {
-    const res = await fetch(`${API_BASE}/session`, {
-      method: "DELETE",
-      credentials: "include"
-    });
+    //CHIAMATA API PER ELIMINARE LA SESSIONE
+    const res = await fetch(`${API_BASE}/session`,
+      {
+        method: "DELETE",
+        credentials: "include"
+      });
 
+    const data = await res.json()
     if (!res.ok) {
-      alert("Errore durante il logout");
+      mostraMessaggio(data.errore || "Errore durante il logout", "danger");
       return;
     }
-
+    
     window.location.href = "../index.html";
   } catch (err) {
-    console.error("Errore logout:", err);
-    alert("Errore di connessione");
+    mostraMessaggio("Errore di connessione con il server", "danger");
   }
 }
 
-// Funzione per eliminare un medico via DELETE
-async function eliminaMedico(email) {
+//FUNZIONE PER ELIMINARE UN MEDICO
+async function eliminaMedico(id) {
   try {
+    //CHIAMATA API PER ELIMINARE MEDICO
     const res = await fetch(`${API_BASE}/medico/elimina`, {
       method: 'DELETE',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ email: email }),
-      credentials: 'include' 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medico_id: id }),
+      credentials: 'include'
     });
 
-    if (res.status === 200) {
-      alert('Medico eliminato con successo');
-      window.location.reload();
+    const data = await res.json();
+
+    //GESTIONE RISPOSTA HTTP
+    if (res.ok) {
+      mostraMessaggio(data.messaggio, 'success');
+      setTimeout(() => window.location.reload(), 1000);
     } else {
-      alert('Errore nell\'eliminazione del medico');
+      mostraMessaggio(data.errore || 'Errore sconosciuto', 'danger');
     }
+
   } catch (error) {
     console.error('Errore fetch:', error);
-    alert('Errore di connessione o server');
+    mostraMessaggio('Errore di connessione o server', 'danger');
   }
 }
 
-// Funzione per avviare la modifica medico: salva email e fa redirect
-function modificaMedico(email) {
-  localStorage.setItem('medicoEmail', email);
+//FUNZIONE PER REDIRECT PER MODIFICARE IL MEDICO
+function modificaMedico(id) {
+  localStorage.setItem('medico_id', id);
   window.location.href = `../amministratore/modifica_medico.html`;
 }
 
+//FUNZIONE PER AGGIORARE MEDICO
 async function aggiornaMedico() {
-  // Prendi i valori dagli input
+  nascondiMessaggio();
+  //OTTENGO TUTTI I DATI INSERITI IN HTML
   const datiMedico = {
+    medico_id: document.getElementById('medico_id').value,
     email: document.getElementById('email').value,
     nome: document.getElementById('nome').value,
     cognome: document.getElementById('cognome').value,
@@ -82,55 +114,59 @@ async function aggiornaMedico() {
     codice_fiscale: document.getElementById('codice_fiscale').value,
     password: document.getElementById('password').value
   };
-
   try {
-    const response = await fetch(`${API_BASE}/medico/aggiorna`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datiMedico),
-      credentials: 'include' 
-    });
+    //CHIAMATA API PER AGGIORANRE CON I NUOVI DATI
+    const response = await fetch(`${API_BASE}/medico/aggiorna`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datiMedico),
+        credentials: 'include'
+      });
+    //GESTIONE RISPOSTE HTTP
     const result = await response.json();
-    if (response.ok) {
-      window.location.reload();
-      alert(result.messaggio);
-    } else {
-      alert(result.errore || 'Errore aggiornamento');
+    if (!response.ok) {
+      mostraMessaggio(result.errore || 'Errore durante l’aggiornamento', 'danger');
+      return;
     }
+    mostraMessaggio(result.messaggio, 'success');
   } catch (error) {
-    console.error('Errore fetch:', error);
-    alert('Errore connessione o server!');
+    console.error(error);
+    mostraMessaggio('Errore di connessione con il server', 'danger');
   }
-  };
+}
 
-// Funzione per caricare la lista completa dei medici in gestione_medici.html
+//FUNZIONE PER CARICARE LISTA MEDICI
 async function caricaMedici() {
-  const session = await getSessionData();
-
+  const session = await controlloSessione();
   if (!session) {
-    // Se non c’è sessione valida, redirect alla login
     window.location.href = `../amministratore/amministratore_login.html`;
     return;
   }
 
   if (location.pathname.includes('gestione_medici.html')) {
     try {
-      const response = await fetch(`${API_BASE}/medico/lista_medici`, {
+      const response = await fetch(`${API_BASE}/medico/lista`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json'},
         credentials: 'include'
       });
+
       const medici = await response.json();
-
       const tbody = document.querySelector("#gestione-medici tbody");
-      tbody.innerHTML = ''; // Pulisce la tabella
-
+      tbody.innerHTML = '';
+       //CREAZIONE DELLE RIGHE CON LE INFORMAZIONI DEI MEDICI
       medici.forEach(medico => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td> 
-            <img src="/Tesi/immagini/negative-minus-svgrepo-com.svg" id="${medico.email}" width="20" height="20" onclick="eliminaMedico(this.getAttribute('id'))"/> 
-            <img src="/Tesi/immagini/pencil-svgrepo-com (1).svg" id="${medico.email}" width="20" height="20" onclick="modificaMedico(this.getAttribute('id'))" /> 
+          <td>
+            <img src="/Tesi/immagini/negative-minus-svgrepo-com.svg"
+                 data-id="${medico.id}"
+                 width="20" height="20"
+                 onclick="eliminaMedico(this.dataset.id)" />
+            <img src="/Tesi/immagini/pencil-svgrepo-com.svg"
+                 data-id="${medico.id}"
+                 width="20" height="20"
+                 onclick="modificaMedico(this.dataset.id)" />
             ${medico.cognome}
           </td>
           <td>${medico.nome}</td>
@@ -140,73 +176,75 @@ async function caricaMedici() {
       });
 
     } catch (error) {
-      console.error('Errore nel caricamento dei medici:', error);
+      console.error(error);
+      mostraMessaggio('Errore nel caricamento dei medici');
     }
   }
 }
 
-// Funzione da inserire nel file JS di modifica_medico.html per caricare dati dettaglio medico
+//FUNZIONE PER CARICARE NELLO SPECIFICO LE INFORMAZIONI DI UN MEDICO
 async function caricaMedicoDettaglio() {
-  const email = localStorage.getItem('medicoEmail');
-  if (!email) {
-    alert('Nessuna email medico specificata.');
+  const id = localStorage.getItem('medico_id');
+  if (!id) {
+    mostraMessaggio('ID medico mancante. Tornare alla lista.');
     return;
   }
 
   try {
-    const response = await fetch(`${API_BASE}/medico/getmedico?email=${encodeURIComponent(email)}`, {
-      method: 'GET',
-      credentials: 'include' 
+    const response = await fetch(`${API_BASE}/medico/getmedico?medico_id=${encodeURIComponent(id)}`,
+    {
+      credentials: 'include'
     });
 
-    if (!response.ok) throw new Error('Errore nel caricamento del medico');
+    if (!response.ok) throw new Error();
 
-    const medici = await response.json();
-
+    const medico = await response.json();
     const tbody = document.querySelector('#gestione-medico tbody');
-    tbody.innerHTML = ''; // Pulisce la tabella
+    tbody.innerHTML = '';
 
-    medici.forEach(medico => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td><input type="text" id="cognome" value="${medico.cognome}"></td>
-        <td><input type="text" id="nome" value="${medico.nome}"></td>
-        <td><input type="text" id="specializzazione" value="${medico.specializzazione}"></td>
-        <td><input type="text" id="luogo_di_nascita" value="${medico.luogo_di_nascita}"></td>
-        <td><input type="date" id="data_di_nascita" value="${medico.data_di_nascita}"></td>
-        <td><input type="text" id="codice_fiscale" pattern="^[a-zA-Z]{6}[0-9]{2}[a-zA-Z][0-9]{2}[a-zA-Z][0-9]{3}[a-zA-Z]$" value="${medico.codice_fiscale}"></td>
-        <td><input type="email" id="email" pattern="[^@]+@[^@]+\.[a-zA-Z]{2,}" value="${medico.email}"></td>
-        <td><input type="password" id="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"></td>
-      `;
-      tbody.appendChild(row);
-    });
+    //INSERIMENTO DINAMICO DELLE RIGHE CON LE INFORMAZIONI DEL MEDICO
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <input type="hidden" id="medico_id" value="${medico.id}">
+      <td><input type="text" id="cognome" value="${medico.cognome}"></td>
+      <td><input type="text" id="nome" value="${medico.nome}"></td>
+      <td><input type="text" id="specializzazione" value="${medico.specializzazione}"></td>
+      <td><input type="text" id="luogo_di_nascita" value="${medico.luogo_di_nascita}"></td>
+      <td><input type="date" id="data_di_nascita" value="${medico.data_di_nascita}"></td>
+      <td><input type="text" id="codice_fiscale" value="${medico.codice_fiscale}"></td>
+      <td><input type="email" id="email" value="${medico.email}"></td>
+      <td><input type="password" id="password"></td>
+    `;
+    tbody.appendChild(row);
 
   } catch (error) {
-    console.error('Errore nel caricamento del medico:', error);
+    console.error(error);
+    mostraMessaggio('Errore nel caricamento dei dati del medico');
   }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (location.pathname.includes('gestione_medici.html')) {
-    const session = await getSessionData();
+    const session = await controlloSessione();
     caricaMedici();
-    if (session.ruolo === 'Amministratore') {
+    if (session && session.ruolo === 'Amministratore') {
       const h = document.getElementById('amministratore');
-      if (h) h.textContent +=  session.nome + " " + session.cognome;
+      if (h) h.textContent += ` ${session.nome} ${session.cognome}`;
     }
   } else if (location.pathname.includes('modifica_medico.html')) {
-    getSessionData();
+    await controlloSessione();
     caricaMedicoDettaglio();
   }
 });
 
 window.addEventListener('pageshow', async () => {
-  const session = await getSessionData();
+  const session = await controlloSessione();
   if (!session) {
     window.location.href = `../index.html`;
-    return;
   }
 });
 
-document.getElementById('aggiorna-medico')
-  .addEventListener('click', aggiornaMedico);
+const btnAggiorna = document.getElementById('aggiorna-medico');
+if (btnAggiorna) {
+  btnAggiorna.addEventListener('click', aggiornaMedico);
+}

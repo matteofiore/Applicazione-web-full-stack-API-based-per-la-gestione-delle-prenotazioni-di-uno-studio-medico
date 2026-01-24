@@ -7,10 +7,13 @@ CLASSI = {
     "Amministratore": amministratore.Amministratore
 }
 
-def autenticazione(email: str, password: str, ruolo: str):
+#FUNZIONE PER AUTENTICARE UTENTE
+def autenticazione(email, password, ruolo):
+    #CONTROLLO RUOLO
     if ruolo not in CLASSI:
         return None, "ruolo non valido"
     model = CLASSI[ruolo]
+    #RICERCA PRESENZA UTENTE NEL DATABASE
     utente = model.query.filter_by(email=email).first()
 
     if not utente:

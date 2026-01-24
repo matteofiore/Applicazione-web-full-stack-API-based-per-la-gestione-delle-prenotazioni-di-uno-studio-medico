@@ -1,10 +1,17 @@
 from flask import Blueprint, request, jsonify
+from api.service.session import controllo_ruoli
 from api.service import medico
 
+#CREAZIONE BLUEPRINT PER LA GESTIONE DELLE OPERAZIONI SUI MEDICI
 medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
 
-@medico_bp.route('/lista_medici', methods=['GET'])
+#CHIAMATA API PER OTTENERE LA LISTA DI TUTTI I MEDICI
+@medico_bp.route('/lista', methods=['GET'])
 def medici():
+    #RICHIAMO FUNZIONE PER CONTROLLARE CHE LA RICHIESTA AVVENGA DA UTENTI AUTORIZZATI
+    error, status = controllo_ruoli(['Paziente', 'Amministratore'])
+    if error:
+        return jsonify({'errore': error}), status
     medici = medico.lista_medici()
 
     return jsonify([{
@@ -16,81 +23,59 @@ def medici():
         } for m in medici
     ]), 200
 
-
-@medico_bp.route('/ricerca_medico', methods=['GET'])
-def ricerca():
-    q = request.args.get('q', '')
-    medici = medico.ricerca_medici(q)
-
-    return jsonify([{
-        'id': m.id,
-        'nome': m.nome,
-        'cognome': m.cognome
-        } for m in medici]), 200
-
-
+#CHIAMATA API PER OTTENERE LE INFORMAZIONI DI UN SINGOLO MEDICO DA UN ID
 @medico_bp.route('/getmedico', methods=['GET'])
 def get_medico():
-    email = request.args.get('email')
-    if not email:
-        return jsonify({'error': 'email mancante'}), 400
+    #RICHIAMO FUNZIONE PER CONTROLLARE CHE LA RICHIESTA AVVENGA DA UTENTI AUTORIZZATI
+    error, status = controllo_ruoli(['Amministratore'])
+    if error:
+        return jsonify({'errore': error}), status
+    id = request.args.get('medico_id')
+    if not id:
+        return jsonify({'error': 'id mancante'}), 400
 
-    medici = medico.get_medico_by_email(email)
+    medici = medico.ottieni_medico_by_id(id)
 
-    info_medico = []
-    for m in medici:
-        data_nascita = m.data_di_nascita
-        data_formattata = (
-            data_nascita.strftime('%Y-%m-%d')
-            if data_nascita else None
-        )
+    medico_ricevuto = {
+        'id': medici.id,
+        'nome': medici.nome,
+        'cognome': medici.cognome,
+        'specializzazione': medici.specializzazione,
+        'luogo_di_nascita': medici.luogo_di_nascita,
+        'data_di_nascita': medici.data_di_nascita.isoformat() if medici.data_di_nascita else None,
+        'codice_fiscale': medici.codice_fiscale,
+        'email': medici.email
+    }
+    print(medico_ricevuto)
+    return jsonify(medico_ricevuto), 200
 
-        info_medico.append({
-            'nome': m.nome,
-            'cognome': m.cognome,
-            'specializzazione': m.specializzazione,
-            'email': m.email,
-            'codice_fiscale': m.codice_fiscale,
-            'luogo_di_nascita': m.luogo_di_nascita,
-            'data_di_nascita': data_formattata
-        })
-
-    return jsonify(info_medico), 200
-
-
+#CHIAMATA API PER ELIMINARE UN MEDICO DA ID
 @medico_bp.route('/elimina', methods=['DELETE'])
 def elimina():
-    session_id = request.cookies.get("sessionId")
-
-    if not session_id:
-        return jsonify({'errore': 'Non autenticato'}), 401
-
-    ruolo = session_id.split('_')[0]
-    if ruolo != 'Amministratore':
-        return jsonify({'errore': 'Operazione riservata all’amministratore'}), 403
+    #RICHIAMO FUNZIONE PER CONTROLLARE CHE LA RICHIESTA AVVENGA DA UTENTI AUTORIZZATI
+    error, status = controllo_ruoli(['Amministratore'])
+    if error:
+        return jsonify({'errore': error}), status
     
     data = request.get_json()
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'errore': 'Parametro email mancante'}), 400
-
-    success = medico.delete_medico_by_email(email)
+    id = data.get('medico_id')
+    if not id:
+        return jsonify({'errore': 'Parametro id mancante'}), 400
+    
+    success = medico.elimina_medico_by_id(id)
 
     if success:
         return jsonify({'messaggio': 'Medico eliminato con successo'}), 200
     else:
         return jsonify({'errore': 'Medico non trovato'}), 404
 
+#CHIAMATA API PER AGGIORNARE I DATI DEL MEDICO DA ID
 @medico_bp.route('/aggiorna', methods=['POST'])
 def aggiorna_medico():
-    session_id = request.cookies.get("sessionId")
-    if not session_id:
-        return jsonify({'errore': 'Non autenticato'}), 401
-
-    ruolo = session_id.split('_')[0]
-    if ruolo != 'Amministratore':
-        return jsonify({'errore': 'Operazione riservata all’amministratore'}), 403
+    #RICHIAMO FUNZIONE PER CONTROLLARE CHE LA RICHIESTA AVVENGA DA UTENTI AUTORIZZATI
+    error, status = controllo_ruoli(['Amministratore'])
+    if error:
+        return jsonify({'errore': error}), status
     try:
         medico.aggiorna(request.get_json())
         return jsonify({'messaggio': 'Medico aggiornato con successo'}), 200

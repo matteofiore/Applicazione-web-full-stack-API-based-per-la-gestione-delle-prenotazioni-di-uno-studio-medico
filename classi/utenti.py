@@ -1,5 +1,6 @@
 from utils.database import db
 
+#DEFINIZIONE CLASSE ASTRATTA UTENTE
 class Utente(db.Model):
     __abstract__ = True
 

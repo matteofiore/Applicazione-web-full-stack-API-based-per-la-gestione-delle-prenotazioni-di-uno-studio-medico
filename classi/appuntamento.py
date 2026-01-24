@@ -1,5 +1,6 @@
 from utils.database import db
 
+#DEFINIZIONE CLASSE APPUNTAMENTO
 class Appuntamento(db.Model):
     __tablename__ = 'appuntamento'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

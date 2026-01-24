@@ -1,17 +1,21 @@
+//COSTRUZIONE URL DINAMICO
 const API_BASE = `${location.protocol}//${location.hostname}:5000`;
 
-function showMessage(message, type = 'danger') {
+//FUNZIONE PER MOSTRARE MESSAGGI DI ERRORE O SUCCESSO NEL BOX HTML
+function mostraMessaggio(message, type = 'danger') {
   const box = document.getElementById('api-error');
-  if (!box) return;
 
+  //VERIFICA ESISTENZA ELEMENTO
+  if (!box){
+    return;
+  }
   box.textContent = message;
-
-  // reset classi
   box.classList.remove('d-none', 'alert-danger', 'alert-success');
   box.classList.add(`alert-${type}`);
 }
 
-function clearMessage() {
+//DEFINIZIONE PER CANCELLARE MESSAGGIO NELLA BOX
+function cancellaMessaggio() {
   const box = document.getElementById('api-error');
   if (!box) return;
 
@@ -20,9 +24,10 @@ function clearMessage() {
   box.classList.remove('alert-danger', 'alert-success');
 }
 
+//LISTENER PER LA GESTIONE DEL SUBMIT DEL FORM DI REGISTRAZIONE
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  clearMessage();
+  cancellaMessaggio();
 
   const formData = new FormData(e.target);
   const data = Object.fromEntries(formData.entries());
@@ -32,14 +37,15 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
   } else if (location.pathname.includes('registra_medico.html')) {
     data.ruolo = 'Medico';
   }
-
+  //VERIFICA COINCIDENZA PASSWORD
   if (data.password !== data.password1) {
-    showMessage('Le password non corrispondono', 'danger');
+    mostraMessaggio('Le password non corrispondono', 'danger');
     return;
   }
 
-  delete data.password1;
+  delete data.password1; //ELIMINO PASSWORD1 NON NECESSARIO
 
+  //CHIAMATA API PER REGISTRARE UTENTE
   try {
     const res = await fetch(`${API_BASE}/registrazione`, {
       method: 'POST',
@@ -48,6 +54,7 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     });
 
     let body = {};
+    //PARSING DELLE RISPOSTE HTTP
     try {
       body = await res.json();
       } catch (err) {
@@ -55,20 +62,19 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
       }
 
     if (!res.ok) {
-      showMessage(body.errore || 'Errore durante la registrazione', 'danger');
+      mostraMessaggio(body.errore || 'Errore durante la registrazione', 'danger');
       return;
     }
-    showMessage('Registrazione avvenuta con successo!', 'success');
+    mostraMessaggio('Registrazione avvenuta con successo!', 'success');
     e.target.querySelector('input[type="submit"]').disabled = true;
-    setTimeout(() => {window.location.href = `../index.html`;}, 3000); // 10000 ms = 10 secondi
-    
-
+    setTimeout(() => {window.location.href = `../index.html`;}, 3000); 
   } catch (err) {
     console.error('Errore di rete:', err);
-    showMessage('Problema di connessione, riprova più tardi', 'danger');
+    mostraMessaggio('Problema di connessione, riprova più tardi', 'danger');
   }
 });
 
+//EVENTO ESEGUITO AL COMPLETO CARICAMENTO DEL DOM
 document.addEventListener('DOMContentLoaded', () => {
   const input = document.getElementById('start');
   if (!input) return;

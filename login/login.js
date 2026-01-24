@@ -1,6 +1,8 @@
+//COSTRUZIONE URL DINAMICO
 const API_BASE = `${location.protocol}//${location.hostname}:5000`;
 
-function showMessage(message, type = 'danger', boxId = 'login-error') {
+//FUNZIONE PER MOSTRARE MESSAGGI DI ERRORE O SUCCESSO NEL BOX HTML
+function mostraMessaggio(message, type = 'danger', boxId = 'login-error') {
   const box = document.getElementById(boxId);
   if (!box) return;
 
@@ -9,7 +11,8 @@ function showMessage(message, type = 'danger', boxId = 'login-error') {
   box.classList.add(`alert-${type}`);
 }
 
-function clearMessage(boxId = 'login-error') {
+//DEFINIZIONE PER CANCELLARE MESSAGGIO NELLA BOX
+function cancellaMessaggio(boxId = 'login-error') {
   const box = document.getElementById(boxId);
   if (!box) return;
 
@@ -18,13 +21,18 @@ function clearMessage(boxId = 'login-error') {
   box.classList.remove('alert-danger', 'alert-success');
 }
 
-async function checkSession() {
+//VERIFICA COOKIE DI SESSIONE
+async function controlloSessione() {
   try {
+    //CHIAMATA API PER VERIFICA ESISTENZA DEL COOKIE DI SESSIONE
     const res = await fetch(`${API_BASE}/session`, {
       credentials: "include"
     });
 
-    if (!res.ok) return;
+    //SE IL COOKIE NON ESISTE INTERROMPI LA FUNZIONE
+    if (!res.ok){
+      return;
+    }
 
     const data = await res.json();
     if (!data) return;
@@ -37,24 +45,24 @@ async function checkSession() {
       window.location.href = `../amministratore/gestione_medici.html`;
     }
   } catch (e) {
-    showMessage(e, 'danger');
+    mostraMessaggio(e, 'danger');
   }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await checkSession();
+  await controlloSessione();
 
   const form = document.getElementById("login-form");
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    clearMessage();
+    cancellaMessaggio();
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    // Imposta ruolo in base alla pagina
+    //IMPOSTO IL RUOLO IN BASE ALLA PAGINA HTML
     if (location.pathname.includes("login_paziente.html")) {
       data.ruolo = "Paziente";
     } else if (location.pathname.includes("login_medico.html")) {
@@ -64,6 +72,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      //CHIAMATA API PER EFFETTUARE IL LOGIN
       const res = await fetch(`${API_BASE}/login`, {
         method: "POST",
         credentials: "include",
@@ -72,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       let body = {};
+      //PARSING DELLE RISPOSTE HTTP
       try {
         body = await res.json();
       } catch (err) {
@@ -79,24 +89,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (!res.ok) {
-        showMessage(body.errore || "Email o password non valide", 'danger');
+        mostraMessaggio(body.errore || "Email o password non valide", 'danger');
         return;
       }
 
       // Login riuscito → redirect
-      showMessage("Login effettuato con successo!", 'success');
+      mostraMessaggio("Login effettuato con successo!", 'success');
       setTimeout(() => {window.location.href = `http://${url}/Tesi/index.html`;}, 2000);
 
       if (data.ruolo === "Paziente") {
-        window.location.href = `../appuntamenti/appuntamenti_Paziente.html`;
+        setTimeout(() => {window.location.href = `../appuntamenti/appuntamenti_paziente.html`;}, 3000);
       } else if (data.ruolo === "Medico") {
-        window.location.href = `../appuntamenti/appuntamenti_medico.html`;
+        setTimeout(() => {window.location.href = `../appuntamenti/appuntamenti_medico.html`;}, 3000);
       } else if (data.ruolo === "Amministratore") {
-        window.location.href = `../amministratore/gestione_medici.html`;
+        setTimeout(() => {window.location.href = `../amministratore/gestione_medici.html`;}, 3000);
       }
 
     } catch (err) {
-      showMessage("Problema di connessione, riprova più tardi", 'danger');
+      mostraMessaggio("Problema di connessione, riprova più tardi", 'danger');
     }
   });
 });
